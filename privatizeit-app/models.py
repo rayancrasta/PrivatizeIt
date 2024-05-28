@@ -10,8 +10,7 @@ def return_table_object(domain_name: str):
         Column("id",Integer,primary_key=True,index=True),
         Column("original_data",String),
         Column("tokenised_data",String),
-        Column("iv",String)
     )
     
-    
+
     

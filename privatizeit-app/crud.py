@@ -1,13 +1,44 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import inspect
+from sqlalchemy import inspect,MetaData,Table
 from models import return_table_object
+from typing import List
+from schemas import FieldInfo
+from database import engine
 
-def create_domain_table(db: Session, domain_name: str) -> bool:
-    table_name = domain_name + "_data"
-    inspector = inspect(db.bind)  # Create an inspector from the database connection
-    if not inspector.has_table(table_name):  # Check if table exists
-        domain_table = return_table_object(domain_name)  # Returns a Table object and its properties
-        domain_table.create(db.bind)  # Create the table using the object
-        return True
-    else:
-        return False
+from sqlalchemy import Column, Integer, String, MetaData, Table
+
+# Database table generation function
+def create_domaintable(db ,domain_name: str, fields: List[FieldInfo]) -> str:
+    if check_table_exsists(db,domain_name):
+        return "already Exsists"
+    
+    metadata = MetaData()
+
+    # Define table dynamically
+    table_columns = [Column('id', Integer, primary_key=True)]
+    for field in fields:
+        if field.field_type == 'numeric':
+            column_type = Integer
+        else:
+            column_type = String(field.field_length)
+
+        table_columns.append(Column(field.field_name, column_type))
+    table = Table(domain_name, metadata, *table_columns)
+
+    # Create table in the DB
+    table.create(bind=engine)
+    
+    return "Created"
+    
+
+#Check if table exsists 
+def check_table_exsists(db:Session,table_name: str):
+    inspector = inspect(db.get_bind())
+    
+    if inspector.has_table(table_name):
+        return True #table exsists
+ 
+    return False 
+    
+
+

@@ -9,11 +9,11 @@ app = FastAPI()
 
 @app.post("/create-domain-table/",status_code=201)
 def create_domain_table(domain_data: schemas.DomainTableCreate,db: Session = Depends(get_db)):
-    success = crud.create_domain_table(db,domain_data.domain_name)
-    if success:
-        msg = "Domain "+domain_data.domain_name+" created succesfully"
-        return {'status':'Domain'}
-    else:
-        raise HTTPException(status_code=400,detail="Domain table already exsists")
+    msg = crud.create_domaintable(db,domain_data.domain_name,domain_data.fields)
+    
+    resp_msg = "Domain "+domain_data.domain_name+" "+msg
+    return {'status':resp_msg} 
+
+
 
     
