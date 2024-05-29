@@ -16,4 +16,12 @@ class DataToTokenise(BaseModel):
     original_data: str
     domain_key : str
     
+class DomainPolicy(BaseModel):
+    id: str
+    domain_name: str
+    fields : List[FieldInfo]
+    
+    class Config:
+        orm_mode = True
+        
     

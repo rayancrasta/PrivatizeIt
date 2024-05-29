@@ -12,5 +12,7 @@ def return_table_object(domain_name: str):
         Column("tokenised_data",String),
     )
     
+    
+    
 
     

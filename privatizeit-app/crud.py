@@ -8,9 +8,9 @@ from database import engine
 from sqlalchemy import Column, Integer, String, MetaData, Table
 
 # Database table generation function
-def create_domaintable(db ,domain_name: str, fields: List[FieldInfo]) -> str:
+def create_domaintable(db ,domain_name: str, fields: List[FieldInfo]) -> (str,int):
     if check_table_exsists(db,domain_name):
-        return "already Exsists"
+        return "already Exsists",1
     
     metadata = MetaData()
 
@@ -28,7 +28,7 @@ def create_domaintable(db ,domain_name: str, fields: List[FieldInfo]) -> str:
     # Create table in the DB
     table.create(bind=engine)
     
-    return "Created"
+    return "Created",0
     
 
 #Check if table exsists 
