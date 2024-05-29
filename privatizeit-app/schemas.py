@@ -1,4 +1,4 @@
-from typing import List
+from typing import List,Any, Dict
 from pydantic import BaseModel, Field
 
 
@@ -12,9 +12,8 @@ class DomainTableCreate(BaseModel):
     fields: List[FieldInfo]
 
 class DataToTokenise(BaseModel):
-    domain_name: str
+    domain_policy_id : str
     original_data: str
-    domain_key : str
     
 class DomainPolicy(BaseModel):
     id: str
@@ -24,4 +23,7 @@ class DomainPolicy(BaseModel):
     class Config:
         orm_mode = True
         
-    
+# Pydantic model for user input
+class UserInput(BaseModel):
+    domain_policy_id: str
+    fields: Dict[str, Any]
