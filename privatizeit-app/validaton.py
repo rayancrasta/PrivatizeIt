@@ -6,8 +6,8 @@ from bson import ObjectId
 from fastapi import HTTPException
 
 # Fetch the domain policy using the domain policy id
-async def fetch_schema(domain_policy_id: str) -> DomainPolicy:
-    document = await domain_collection.find_one({"_id": ObjectId(domain_policy_id)})
+async def fetch_schema(tokenisation_policy_id: str) -> DomainPolicy:
+    document = await domain_collection.find_one({"_id": ObjectId(tokenisation_policy_id)})
     # print("Document from mongo: ", document)
     if document:
         # Map _id to id
@@ -18,7 +18,7 @@ async def fetch_schema(domain_policy_id: str) -> DomainPolicy:
         raise HTTPException(status_code=404, detail="Schema not found")
 
 # Validate if the user input is same as the schema expected from the policy
-async def validate_user_input(domain_policy_id: str, schema, user_input: Dict[str, Any]) -> bool:
+async def validate_user_input(tokenisation_policy_id: str, schema, user_input: Dict[str, Any]) -> bool:
     # Create a dynamic Pydantic model
     field_definitions = {}
     for field in schema.fields:

@@ -71,10 +71,10 @@ def get_encrypted_value(db:Session,table: Table,tokenised_value:str) -> str:
         return "Not Found"
     
 #Store private key for a domain in DB
-def store_privatekey(db:Session,domain_policy_id,domain_name,private_key):
+def store_privatekey(db:Session,tokenisation_policy_id,domain_name,private_key):
     try:
         db_data = models.KeysToDomainModel(
-            domain_policy_id=domain_policy_id,
+            tokenisation_policy_id=tokenisation_policy_id,
             domain_name = domain_name,
             private_key=private_key
         )   
@@ -85,13 +85,13 @@ def store_privatekey(db:Session,domain_policy_id,domain_name,private_key):
         raise ValueError("Error saving private key"+ str(e))    
 
 #Get private key for a specific policy id
-def get_private_key(domain_policy_id :str,db: Session = Depends(get_db)) -> str:
+def get_private_key(tokenisation_policy_id :str,db: Session = Depends(get_db)) -> str:
     try:
-        record = db.query(models.KeysToDomainModel).filter(models.KeysToDomainModel.domain_policy_id== domain_policy_id).first()
+        record = db.query(models.KeysToDomainModel).filter(models.KeysToDomainModel.tokenisation_policy_id== tokenisation_policy_id).first()
         
         if record:
             return record.private_key
         else:
-            raise ValueError("No key for the domain_policy_id")
+            raise ValueError("No key for the tokenisation_policy_id")
     except Exception as e:
         raise ValueError(f"Error fetching private key: {e}")

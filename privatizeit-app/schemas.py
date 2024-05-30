@@ -22,17 +22,17 @@ class DomainPolicy(BaseModel):
         
 # TOKENISATION input
 class UserInputT(BaseModel):
-    domain_policy_id: str
+    tokenisation_policy_id: str
     domain_key : str
     fields: Dict[str, Any]
 
 # DEtokenisationInput
 class UserInputDT(BaseModel):
-    domain_policy_id: str
+    tokenisation_policy_id: str
     key_pass : str
     fields: Dict[str, Any]
 
 #Keys mapped to domains
 class KeysToDomains(BaseModel):
-    domain_policy_id: str
+    tokenisation_policy_id: str
     private_key: str

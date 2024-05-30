@@ -11,7 +11,7 @@ async def add_domain_policy(domain_data: DomainTableCreate) -> int:
     domaindict =  domain_helper(getdomain)
     return domaindict['id']
 
-async def get_domain_policy_id_from_name(domain_name: str) -> str:
+async def get_tokenisation_policy_id_from_name(domain_name: str) -> str:
     try:
         getdomain = await domain_collection.find_one({"domain_name": domain_name})
         domaindict =  domain_helper(getdomain)
