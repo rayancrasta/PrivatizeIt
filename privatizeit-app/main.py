@@ -2,19 +2,20 @@ from fastapi import FastAPI, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from database import engine, get_db
 import models, schemas, crud, tokenisation, database
-from crud_mongodb import add_domain_policy,get_tokenisation_policy_id_from_name,get_domain_name_from_policyid
+from crud_mongodb import add_domain_policy,get_tokenisation_policy_id_from_name,get_tokenisation_pname_from_policyid
 from typing import List,Dict, Any
 from validaton import validate_user_input,fetch_schema
+import crud_mongodb
 
 database.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
 @app.post("/create-domain-table/",status_code=201)
-async def create_domain_table(domain_data: schemas.DomainTableCreate,db: Session = Depends(get_db)):
+async def create_domain_table(tokenisation_pdata: schemas.DomainTableCreate,db: Session = Depends(get_db)):
     # Create the domain in PostgreSQL
     try:
-        msg,exsists = crud.create_domaintable(db, domain_data.domain_name, domain_data.fields)
+        msg,exsists = crud.create_domaintable(db, tokenisation_pdata.tokenisation_pname, tokenisation_pdata.fields)
     except Exception as e:
         raise HTTPException(status_code=500, detail="DB"+str(e))
 
@@ -22,23 +23,23 @@ async def create_domain_table(domain_data: schemas.DomainTableCreate,db: Session
     #Save the policy in MongoDB
     try:
         if not exsists:
-            tokenisation_policy_id = await add_domain_policy(domain_data)
+            tokenisation_policy_id = await add_domain_policy(tokenisation_pdata)
         else:
-            tokenisation_policy_id = await get_tokenisation_policy_id_from_name(domain_data.domain_name)
+            tokenisation_policy_id = await get_tokenisation_policy_id_from_name(tokenisation_pdata.tokenisation_pname)
     except Exception as e:
         raise HTTPException(status_code=500,detail="Mongo"+str(e))
       
     if not exsists:
         #Generate the encryption keys
-        private_key, public_key = tokenisation.generate_rsakeys(domain_data.key_pass)
+        private_key, public_key = tokenisation.generate_rsakeys(tokenisation_pdata.key_pass)
         try:
-            crud.store_privatekey(db,tokenisation_policy_id,domain_data.domain_name,private_key)
+            crud.store_privatekey(db,tokenisation_policy_id,tokenisation_pdata.tokenisation_pname,private_key)
         except Exception as e:
             raise HTTPException(status_code=500,detail="Keys: "+str(e))  
     else:
         public_key = "-"
     
-    resp_msg = f"Domain {domain_data.domain_name} {msg}"
+    resp_msg = f"Tokenisation Policy {tokenisation_pdata.tokenisation_pname} {msg}"
     return {'status':resp_msg,'tokenisation_policy_id': tokenisation_policy_id,'public_key':public_key}
  
 @app.post("/tokenise-Single-record/", status_code=200)
@@ -46,7 +47,7 @@ async def tokenise_single_record(user_input: schemas.UserInputT = Body(...),db: 
     
     #Get name of domain from the MonogDB
     try:
-        domain_name = await get_domain_name_from_policyid(user_input.tokenisation_policy_id)
+        tokenisation_pname = await get_tokenisation_pname_from_policyid(user_input.tokenisation_policy_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Domain Name Fetch failed")
     
@@ -86,8 +87,8 @@ async def tokenise_single_record(user_input: schemas.UserInputT = Body(...),db: 
     public_key = user_input.domain_key  
     
     #Tokenise the data and save in DB
-    #Get table from the domain_name
-    table = models.create_or_get_tokenised_data_class(domain_name)
+    #Get table from the tokenisation_pname
+    table = models.create_or_get_tokenised_data_class(tokenisation_pname)
     tokenised_data = {}
     print(user_input.fields.items())
     try:
@@ -111,16 +112,16 @@ async def tokenise_single_record(user_input: schemas.UserInputT = Body(...),db: 
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
       
-@app.get("/detokenise-Single-record",status_code=200)
+@app.get("/detokenise-Single-record/",status_code=200)
 async def detokenise_single_record(user_input: schemas.UserInputDT = Body(...),db:Session = Depends(get_db)):
     #Get name of domain from the MonogDB
     try:
-        domain_name = await get_domain_name_from_policyid(user_input.tokenisation_policy_id)
+        tokenisation_pname = await get_tokenisation_pname_from_policyid(user_input.tokenisation_policy_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Domain Name Fetch failed")
     
-    #Get table from the domain_name
-    table = models.create_or_get_tokenised_data_class(domain_name)
+    #Get table from the tokenisation_pname
+    table = models.create_or_get_tokenised_data_class(tokenisation_pname)
     
     try:
         private_key = crud.get_private_key(user_input.tokenisation_policy_id,db)
@@ -166,3 +167,11 @@ async def detokenise_single_record(user_input: schemas.UserInputDT = Body(...),d
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
     
+@app.post("/create-masking-policy/",status_code=201)
+async def create_masking_policy(masking_rules: schemas.MaskingPolicyCreate = Body(...)):
+    try:
+        masking_policy_id = await crud_mongodb.save_masking_policy(masking_rules)
+        resp_msg = f"Masking Policy {masking_rules.masking_policy_name} was created"
+        return {'status':resp_msg,'masking_policy_id': masking_policy_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Cant save masking policy"+str(e))

@@ -12,8 +12,8 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 # Database table generation function
-def create_domaintable(db ,domain_name: str, fields: List[FieldInfo]):
-    if check_table_exsists(db,domain_name):
+def create_domaintable(db ,tokenisation_pname: str, fields: List[FieldInfo]):
+    if check_table_exsists(db,tokenisation_pname):
         return "already Exsists",True
 
     metadata = MetaData()
@@ -27,12 +27,12 @@ def create_domaintable(db ,domain_name: str, fields: List[FieldInfo]):
             column_type = String(field.field_length)
 
         table_columns.append(Column(field.field_name, column_type))
-    table = Table(domain_name.lower(), metadata, *table_columns)
+    table = Table(tokenisation_pname.lower(), metadata, *table_columns)
     # Create the table in the database
     Base.metadata.create_all(bind=engine,tables=[table])
     
     #Create the table that stores the tokenised data as well counterpart as well
-    models.create_or_get_tokenised_data_class(domain_name)
+    models.create_or_get_tokenised_data_class(tokenisation_pname)
 
     return "Created",False
     
@@ -71,11 +71,11 @@ def get_encrypted_value(db:Session,table: Table,tokenised_value:str) -> str:
         return "Not Found"
     
 #Store private key for a domain in DB
-def store_privatekey(db:Session,tokenisation_policy_id,domain_name,private_key):
+def store_privatekey(db:Session,tokenisation_policy_id,tokenisation_pname,private_key):
     try:
         db_data = models.KeysToDomainModel(
             tokenisation_policy_id=tokenisation_policy_id,
-            domain_name = domain_name,
+            tokenisation_pname = tokenisation_pname,
             private_key=private_key
         )   
         db.add(db_data)

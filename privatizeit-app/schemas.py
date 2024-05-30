@@ -8,12 +8,24 @@ class FieldInfo(BaseModel):
     field_length: int
 
 class DomainTableCreate(BaseModel):
+    tokenisation_pname: str
     domain_name: str
     key_pass: str
     fields: List[FieldInfo]
     
-class DomainPolicy(BaseModel):
+class MaskingRuleInfo(BaseModel):
+    show_start: int
+    show_last: int    
+
+class MaskingPolicyCreate(BaseModel):
+    domain_name: str
+    masking_policy_name: str
+    tokenisation_policy_id: str
+    rules: List[MaskingRuleInfo]
+    
+class TokenisationPolicy(BaseModel):
     id: str
+    tokenisation_pname: str
     domain_name: str
     fields : List[FieldInfo]
     

@@ -1,19 +1,19 @@
 from typing import Dict, List, Any
 from pydantic import BaseModel, create_model, ValidationError
-from schemas import DomainPolicy, FieldInfo
-from crud_mongodb import domain_collection
+from schemas import TokenisationPolicy, FieldInfo
+from crud_mongodb import tokenisation_policy_collection
 from bson import ObjectId
 from fastapi import HTTPException
 
 # Fetch the domain policy using the domain policy id
-async def fetch_schema(tokenisation_policy_id: str) -> DomainPolicy:
-    document = await domain_collection.find_one({"_id": ObjectId(tokenisation_policy_id)})
+async def fetch_schema(tokenisation_policy_id: str) -> TokenisationPolicy:
+    document = await tokenisation_policy_collection.find_one({"_id": ObjectId(tokenisation_policy_id)})
     # print("Document from mongo: ", document)
     if document:
         # Map _id to id
         document["id"] = str(document["_id"])
         del document["_id"]
-        return DomainPolicy(**document)
+        return TokenisationPolicy(**document)
     else:
         raise HTTPException(status_code=404, detail="Schema not found")
 
