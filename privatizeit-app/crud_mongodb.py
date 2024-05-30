@@ -39,7 +39,7 @@ async def save_masking_policy(masking_rules: MaskingPolicyCreate) -> str:
     try:
         existing_policy = await masking_policy_colleciton.find_one({"masking_policy_name": masking_rules.masking_policy_name})
         if existing_policy:
-            return "already exsists",0
+            return "already exsists, user a new name",0
         
         masking_rulesdict = masking_rules.model_dump()
         newdomain = await masking_policy_colleciton.insert_one(masking_rulesdict)
