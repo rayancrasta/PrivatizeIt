@@ -9,6 +9,7 @@ class FieldInfo(BaseModel):
 
 class DomainTableCreate(BaseModel):
     domain_name: str
+    key_pass: str
     fields: List[FieldInfo]
     
 class DomainPolicy(BaseModel):
@@ -28,6 +29,7 @@ class UserInputT(BaseModel):
 # DEtokenisationInput
 class UserInputDT(BaseModel):
     domain_policy_id: str
+    key_pass : str
     fields: Dict[str, Any]
 
 #Keys mapped to domains

@@ -33,7 +33,7 @@ def tokenise_email(email):
     tokenized_domain = tokenise_string(domain.split('.')[0])
     return f"{tokenized_user}@{tokenized_domain}.domain"
 
-def generate_rsakeys():
+def generate_rsakeys(key_pass:str):
     private_key = rsa.generate_private_key(
     public_exponent=65537,
     key_size=1024,
@@ -42,7 +42,7 @@ def generate_rsakeys():
     private_key_pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption()
+        encryption_algorithm=serialization.BestAvailableEncryption(key_pass.encode())
     )
     
     public_key_pem = private_key.public_key().public_bytes(
@@ -69,15 +69,14 @@ def encrypt_original(public_key:str,original_value:str) -> str:
     
     return encrypted_value.hex()
 
-def decrypt_to_original(encrypted_value_string:str,private_key_string:str):
+def decrypt_to_original(encrypted_value_string:str,private_key_string:str,key_pass:str):
     # Deserialize the private key
     private_key = serialization.load_pem_private_key(
         private_key_string.encode(),
-        password=None,
+        password=key_pass.encode(),
         backend=default_backend()
     )
 
-    
     print("Encrypted value string: "+encrypted_value_string)
     # Convert to bytes
     encrypted_value = bytes.fromhex(encrypted_value_string)

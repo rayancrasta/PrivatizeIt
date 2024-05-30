@@ -18,11 +18,7 @@ async def fetch_schema(domain_policy_id: str) -> DomainPolicy:
         raise HTTPException(status_code=404, detail="Schema not found")
 
 # Validate if the user input is same as the schema expected from the policy
-async def validate_user_input(domain_policy_id: str, user_input: Dict[str, Any]) -> bool:
-    schema = await fetch_schema(domain_policy_id)
-    if schema is None:
-        return False
-
+async def validate_user_input(domain_policy_id: str, schema, user_input: Dict[str, Any]) -> bool:
     # Create a dynamic Pydantic model
     field_definitions = {}
     for field in schema.fields:

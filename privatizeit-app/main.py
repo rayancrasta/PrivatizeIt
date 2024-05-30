@@ -4,7 +4,7 @@ from database import engine, get_db
 import models, schemas, crud, tokenisation, database
 from crud_mongodb import add_domain_policy,get_domain_policy_id_from_name,get_domain_name_from_policyid
 from typing import List,Dict, Any
-from validaton import validate_user_input
+from validaton import validate_user_input,fetch_schema
 
 database.Base.metadata.create_all(bind=engine)
 
@@ -30,7 +30,7 @@ async def create_domain_table(domain_data: schemas.DomainTableCreate,db: Session
       
     if not exsists:
         #Generate the encryption keys
-        private_key, public_key = tokenisation.generate_rsakeys()
+        private_key, public_key = tokenisation.generate_rsakeys(domain_data.key_pass)
         try:
             crud.store_privatekey(db,domain_policy_id,domain_data.domain_name,private_key)
         except Exception as e:
@@ -44,9 +44,35 @@ async def create_domain_table(domain_data: schemas.DomainTableCreate,db: Session
     
 @app.post("/tokenise-Single-record/", status_code=200)
 async def tokenise_single_record(user_input: schemas.UserInputT = Body(...),db: Session = Depends(get_db)):
+    
+    #Get name of domain from the MonogDB
+    try:
+        domain_name = await get_domain_name_from_policyid(user_input.domain_policy_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Domain Name Fetch failed")
+    
+    #Filter the values to only schema values for validation
+    filtered_values = {}
+    
+    # Fetch the tokenization policy
+    try:
+        schema = await fetch_schema(user_input.domain_policy_id)
+        if schema is None:
+            raise HTTPException(status_code=500, detail="Tokenization policy fetch failed")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Tokenization policy fetch failed")
+    
+    # Convert the policy fields to a set for quick lookup
+    policy_fields = [field.field_name for field in schema.fields]
+    print("Policy: ",policy_fields)
+    #Get the values to tokenise only in the filtered list    
+    for field_name,fieldvalue in user_input.fields.items():
+        if field_name in policy_fields:
+            filtered_values[field_name]=fieldvalue    
+    
     #Validate the data
     try:
-        validated_data = await validate_user_input(user_input.domain_policy_id, user_input.fields)
+        validated_data = await validate_user_input(user_input.domain_policy_id,schema, filtered_values)
         # print(validated_data)
         if not validated_data:
             print("Schema Validation Failed")
@@ -56,12 +82,7 @@ async def tokenise_single_record(user_input: schemas.UserInputT = Body(...),db: 
         raise HTTPException(status_code=500, detail="Validation Failed")
     print("Schema Validation succesfull")
     
-    #Get name of domain from the MonogDB
-    try:
-        domain_name = await get_domain_name_from_policyid(user_input.domain_policy_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Domain Name Fetch failed")
-    
+
     #Get the public key from the request
     public_key = user_input.domain_key  
     
@@ -72,15 +93,19 @@ async def tokenise_single_record(user_input: schemas.UserInputT = Body(...),db: 
     print(user_input.fields.items())
     try:
         for field_name,original_value in user_input.fields.items():
-            if field_name == "email":
-                tokenised_value = tokenisation.tokenise_email(original_value)
-            elif original_value.isdigit():
-                tokenised_value = tokenisation.tokenise_number(original_value)
+            if field_name in policy_fields:
+                if field_name == "email":
+                    tokenised_value = tokenisation.tokenise_email(original_value)
+                elif original_value.isdigit():
+                    tokenised_value = tokenisation.tokenise_number(original_value)
+                else:
+                    tokenised_value = tokenisation.tokenise_string(original_value)
+                
+                encrypted_value = tokenisation.encrypt_original(public_key,original_value)
+                crud.save_tokenised_data(db,table,encrypted_value,tokenised_value)
+                tokenised_data[field_name] = tokenised_value
             else:
-                tokenised_value = tokenisation.tokenise_string(original_value)
-            tokenised_data[field_name] = tokenised_value
-            encrypted_value = tokenisation.encrypt_original(public_key,original_value)
-            crud.save_tokenised_data(db,table,encrypted_value,tokenised_value)
+                tokenised_data[field_name] = original_value
                 
         return {"result": tokenised_data}
     
@@ -103,27 +128,42 @@ async def detokenise_single_record(user_input: schemas.UserInputDT = Body(...),d
         private_key = crud.get_private_key(user_input.domain_policy_id,db)
     except Exception as e:
        raise HTTPException(status_code=500, detail="Private key fetch error : "+str(e))
+   
+    # Fetch the tokenization policy
+    try:
+        schema = await fetch_schema(user_input.domain_policy_id)
+        if schema is None:
+            raise HTTPException(status_code=500, detail="Tokenization policy fetch failed")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Tokenization policy fetch failed")
+    
+    # Convert the policy fields to a set for quick lookup
+    policy_fields = [field.field_name for field in schema.fields]
+    print("Policy: ",policy_fields)
+    
     #Get original values
     try:
         original_fields = {}
         
         for field_name,tokenised_value in user_input.fields.items():
-            try:
-                encrypted_value = crud.get_encrypted_value(db,table,tokenised_value)
-            except Exception as e:
-                raise HTTPException(status_code=500,detail="Encrypted value fetch error:"+str(e))
-            
-            if encrypted_value != "Not Found":
-                #Decrypt the value 
+            if field_name in policy_fields:
                 try:
-                    original_value = tokenisation.decrypt_to_original(encrypted_value,private_key)
+                    encrypted_value = crud.get_encrypted_value(db,table,tokenised_value)
                 except Exception as e:
-                    raise HTTPException(status_code=500,detail="Decrypt to original error: "+str(e))
+                    raise HTTPException(status_code=500,detail="Encrypted value fetch error:"+str(e))
                 
-                original_fields[field_name] = original_value
+                if encrypted_value != "Not Found":
+                    #Decrypt the value 
+                    try:
+                        original_value = tokenisation.decrypt_to_original(encrypted_value,private_key,user_input.key_pass)
+                    except Exception as e:
+                        raise HTTPException(status_code=500,detail="Decrypt to original error: "+str(e))
+                    
+                    original_fields[field_name] = original_value
+                else:
+                    original_fields[field_name] = "Not Found"
             else:
-                original_fields[field_name] = "Not Found"
-        
+                original_fields[field_name] = tokenised_value
         return {"fields":original_fields}
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
