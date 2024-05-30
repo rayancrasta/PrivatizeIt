@@ -1,6 +1,7 @@
 from sqlalchemy import Column,Table, Integer, String, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 import database
+from database import Base
 
 def create_or_get_tokenised_data_class(domain_name:str) -> Table:
     metadata = MetaData()
@@ -22,3 +23,12 @@ def create_or_get_tokenised_data_class(domain_name:str) -> Table:
     metadata.create_all(bind=database.engine)
     
     return table
+
+class KeysToDomainModel(Base):
+    __tablename__ = 'domainkeys'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    domain_policy_id = Column(String, unique=True, index=True)
+    private_key = Column(String, nullable=False)
+    
+    

@@ -11,10 +11,10 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 # Database table generation function
-def create_domaintable(db ,domain_name: str, fields: List[FieldInfo]) -> (str,int):
+def create_domaintable(db ,domain_name: str, fields: List[FieldInfo]):
     if check_table_exsists(db,domain_name):
-        return "already Exsists",1
-    
+        return "already Exsists",True
+
     metadata = MetaData()
 
     # Define table dynamically
@@ -28,12 +28,12 @@ def create_domaintable(db ,domain_name: str, fields: List[FieldInfo]) -> (str,in
         table_columns.append(Column(field.field_name, column_type))
     table = Table(domain_name.lower(), metadata, *table_columns)
     # Create the table in the database
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine,tables=[table])
     
     #Create the table that stores the tokenised data as well counterpart as well
     models.create_or_get_tokenised_data_class(domain_name)
 
-    return "Created",0
+    return "Created",False
     
 #Check if table exsists 
 def check_table_exsists(db:Session,table_name: str):
@@ -68,3 +68,16 @@ def get_original_value(db:Session,table: Table,tokenised_value:str) -> str:
         return original_record.original_value
     else:
         return "Not Found"
+    
+#Store private key for a domain in DB
+def store_privatekey(db:Session,domain_policy_id,private_key):
+    try:
+        db_data = models.KeysToDomainModel(
+            domain_policy_id=domain_policy_id,
+            private_key=private_key
+        )   
+        db.add(db_data)
+        db.commit()
+        db.refresh(db_data)
+    except Exception as e:
+        raise ValueError("Error saving private key"+ str(e))    

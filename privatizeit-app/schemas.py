@@ -10,10 +10,6 @@ class FieldInfo(BaseModel):
 class DomainTableCreate(BaseModel):
     domain_name: str
     fields: List[FieldInfo]
-
-class DataToTokenise(BaseModel):
-    domain_policy_id : str
-    original_data: str
     
 class DomainPolicy(BaseModel):
     id: str
@@ -23,7 +19,18 @@ class DomainPolicy(BaseModel):
     class Config:
         orm_mode = True
         
-# Pydantic model for user input
-class UserInput(BaseModel):
+# TOKENISATION input
+class UserInputT(BaseModel):
+    domain_policy_id: str
+    domain_key : str
+    fields: Dict[str, Any]
+
+# DEtokenisationInput
+class UserInputDT(BaseModel):
     domain_policy_id: str
     fields: Dict[str, Any]
+
+#Keys mapped to domains
+class KeysToDomains(BaseModel):
+    domain_policy_id: str
+    private_key: str

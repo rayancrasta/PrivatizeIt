@@ -18,23 +18,32 @@ async def create_domain_table(domain_data: schemas.DomainTableCreate,db: Session
     except Exception as e:
         raise HTTPException(status_code=500, detail="DB"+str(e))
 
+    print(exsists)
     #Save the policy in MongoDB
     try:
         if not exsists:
             domain_policy_id = await add_domain_policy(domain_data)
         else:
             domain_policy_id = await get_domain_policy_id_from_name(domain_data.domain_name)
-            
-         
     except Exception as e:
         raise HTTPException(status_code=500,detail="Mongo"+str(e))
+      
+    if not exsists:
+        #Generate the encryption keys
+        private_key, public_key = tokenisation.generate_rsakeys()
+        try:
+            crud.store_privatekey(db,domain_policy_id,private_key)
+        except Exception as e:
+            raise HTTPException(status_code=500,detail="Keys: "+str(e))  
+    else:
+        public_key = "-"
     
     resp_msg = f"Domain {domain_data.domain_name} {msg}"
-    return {'status':resp_msg,'domain_policy_id': domain_policy_id}
+    return {'status':resp_msg,'domain_policy_id': domain_policy_id,'public_key':public_key}
 
     
 @app.post("/tokenise-Single-record/", status_code=200)
-async def tokenise_single_record(user_input: schemas.UserInput = Body(...),db: Session = Depends(get_db)):
+async def tokenise_single_record(user_input: schemas.UserInputT = Body(...),db: Session = Depends(get_db)):
     #Validate the data
     try:
         validated_data = await validate_user_input(user_input.domain_policy_id, user_input.fields)
@@ -53,8 +62,10 @@ async def tokenise_single_record(user_input: schemas.UserInput = Body(...),db: S
     except Exception as e:
         raise HTTPException(status_code=500, detail="Domain Name Fetch failed")
     
-    #Tokenise the data and save in DB
+    #Get the public key from the request
+    public_key = user_input.domain_key  
     
+    #Tokenise the data and save in DB
     #Get table from the domain_name
     table = models.create_or_get_tokenised_data_class(domain_name)
     tokenised_data = {}
@@ -68,7 +79,8 @@ async def tokenise_single_record(user_input: schemas.UserInput = Body(...),db: S
             else:
                 tokenised_value = tokenisation.tokenise_string(original_value)
             tokenised_data[field_name] = tokenised_value
-            crud.save_tokenised_data(db,table,original_value,tokenised_value)
+            encrypted_value = tokenisation.encrypt_original(public_key,original_value)
+            crud.save_tokenised_data(db,table,encrypted_value,tokenised_value)
                 
         return {"result": tokenised_data}
     
@@ -77,7 +89,7 @@ async def tokenise_single_record(user_input: schemas.UserInput = Body(...),db: S
     
     
 @app.get("/detokenise-Single-record",status_code=200)
-async def detokenise_single_record(user_input: schemas.UserInput = Body(...),db:Session = Depends(get_db)):
+async def detokenise_single_record(user_input: schemas.UserInputDT = Body(...),db:Session = Depends(get_db)):
     #Get name of domain from the MonogDB
     try:
         domain_name = await get_domain_name_from_policyid(user_input.domain_policy_id)
