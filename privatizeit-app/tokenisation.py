@@ -1,6 +1,7 @@
 import hashlib
 import random
 import string
+import crud
 from cryptography.hazmat.primitives.asymmetric import rsa,padding
 from cryptography.hazmat.primitives import serialization,hashes
 from cryptography.hazmat.backends import default_backend
@@ -50,7 +51,7 @@ def generate_rsakeys():
     )
     
     return private_key_pem.decode('utf-8'), public_key_pem.decode('utf-8')
-
+    
 def encrypt_original(public_key:str,original_value:str) -> str:
     if isinstance(public_key,str):
         public_key = public_key.encode() # to bytes
@@ -66,8 +67,31 @@ def encrypt_original(public_key:str,original_value:str) -> str:
         )
     )
     
-    return encrypted_value
+    return encrypted_value.hex()
 
+def decrypt_to_original(encrypted_value_string:str,private_key_string:str):
+    # Deserialize the private key
+    private_key = serialization.load_pem_private_key(
+        private_key_string.encode(),
+        password=None,
+        backend=default_backend()
+    )
 
+    
+    print("Encrypted value string: "+encrypted_value_string)
+    # Convert to bytes
+    encrypted_value = bytes.fromhex(encrypted_value_string)
+
+    # Decrypt the encrypted value
+    decrypted_value = private_key.decrypt(
+        encrypted_value,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+
+    return decrypted_value.decode() #to string
 
      

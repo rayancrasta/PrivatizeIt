@@ -32,7 +32,7 @@ async def create_domain_table(domain_data: schemas.DomainTableCreate,db: Session
         #Generate the encryption keys
         private_key, public_key = tokenisation.generate_rsakeys()
         try:
-            crud.store_privatekey(db,domain_policy_id,private_key)
+            crud.store_privatekey(db,domain_policy_id,domain_data.domain_name,private_key)
         except Exception as e:
             raise HTTPException(status_code=500,detail="Keys: "+str(e))  
     else:
@@ -98,14 +98,31 @@ async def detokenise_single_record(user_input: schemas.UserInputDT = Body(...),d
     
     #Get table from the domain_name
     table = models.create_or_get_tokenised_data_class(domain_name)
-
+    
+    try:
+        private_key = crud.get_private_key(user_input.domain_policy_id,db)
+    except Exception as e:
+       raise HTTPException(status_code=500, detail="Private key fetch error : "+str(e))
     #Get original values
     try:
         original_fields = {}
         
         for field_name,tokenised_value in user_input.fields.items():
-            original_value = crud.get_original_value(db,table,tokenised_value)
-            original_fields[field_name] = original_value
+            try:
+                encrypted_value = crud.get_encrypted_value(db,table,tokenised_value)
+            except Exception as e:
+                raise HTTPException(status_code=500,detail="Encrypted value fetch error:"+str(e))
+            
+            if encrypted_value != "Not Found":
+                #Decrypt the value 
+                try:
+                    original_value = tokenisation.decrypt_to_original(encrypted_value,private_key)
+                except Exception as e:
+                    raise HTTPException(status_code=500,detail="Decrypt to original error: "+str(e))
+                
+                original_fields[field_name] = original_value
+            else:
+                original_fields[field_name] = "Not Found"
         
         return {"fields":original_fields}
     except Exception as e:

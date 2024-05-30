@@ -29,6 +29,7 @@ class KeysToDomainModel(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     domain_policy_id = Column(String, unique=True, index=True)
+    domain_name = Column(String, unique=True)
     private_key = Column(String, nullable=False)
     
     
