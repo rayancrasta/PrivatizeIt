@@ -170,8 +170,9 @@ async def detokenise_single_record(user_input: schemas.UserInputDT = Body(...),d
 @app.post("/create-masking-policy/",status_code=201)
 async def create_masking_policy(masking_rules: schemas.MaskingPolicyCreate = Body(...)):
     try:
-        masking_policy_id = await crud_mongodb.save_masking_policy(masking_rules)
-        resp_msg = f"Masking Policy {masking_rules.masking_policy_name} was created"
-        return {'status':resp_msg,'masking_policy_id': masking_policy_id}
+        msg,id = await crud_mongodb.save_masking_policy(masking_rules)
+        resp_msg = f"Masking Policy {masking_rules.masking_policy_name} {msg}"
+        return {'status':resp_msg,'masking_policy_id': id}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Cant save masking policy"+str(e))
+    

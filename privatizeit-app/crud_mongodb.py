@@ -5,7 +5,7 @@ from mongodb import tokenisation_policy_collection,domain_helper,masking_policy_
 
 async def add_domain_policy(tokenisation_pdata: DomainTableCreate) -> int:
     try:
-        existing_policy = await masking_policy_colleciton.find_one({"domain_name": tokenisation_pdata.tokenisation_pname})
+        existing_policy = await masking_policy_colleciton.find_one({"tokenisation_pname": tokenisation_pdata.tokenisation_pname})
         if existing_policy:
                 return str(existing_policy["_id"])
             
@@ -37,13 +37,13 @@ async def get_tokenisation_pname_from_policyid(domain_policyid: str):
     
 async def save_masking_policy(masking_rules: MaskingPolicyCreate) -> str:
     try:
-        existing_policy = await masking_policy_colleciton.find_one({"domain_name": masking_rules.domain_name})
+        existing_policy = await masking_policy_colleciton.find_one({"masking_policy_name": masking_rules.masking_policy_name})
         if existing_policy:
-            return str(existing_policy["_id"])
+            return "already exsists",0
         
         masking_rulesdict = masking_rules.model_dump()
         newdomain = await masking_policy_colleciton.insert_one(masking_rulesdict)
-        return str(newdomain.inserted_id)
+        return "Was Created",str(newdomain.inserted_id)
     except Exception as e:
         raise e 
     

@@ -14,6 +14,7 @@ class DomainTableCreate(BaseModel):
     fields: List[FieldInfo]
     
 class MaskingRuleInfo(BaseModel):
+    field_name: str
     show_start: int
     show_last: int    
 
