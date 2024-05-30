@@ -27,14 +27,12 @@ def create_domaintable(db ,domain_name: str, fields: List[FieldInfo]) -> (str,in
 
         table_columns.append(Column(field.field_name, column_type))
     table = Table(domain_name.lower(), metadata, *table_columns)
-    # Create table in the DB
-    table.create(bind=engine)
-    
-    #Create the tokenisation counterpart as well
-    table_for_data = models.create_or_get_tokenised_data_class(domain_name)
     # Create the table in the database
-    Base.metadata.create_all(bind=engine, tables=[table_for_data.__table__])
+    Base.metadata.create_all(bind=engine)
     
+    #Create the table that stores the tokenised data as well counterpart as well
+    models.create_or_get_tokenised_data_class(domain_name)
+
     return "Created",0
     
 #Check if table exsists 
@@ -61,3 +59,12 @@ def save_tokenised_data(db:Session,table: Table,original_value:str,tokenised_val
         # return db_data
     except Exception as e:
         print("Saving tokenised data exception: ",e)
+
+#Get mapping of original value
+def get_original_value(db:Session,table: Table,tokenised_value:str) -> str:
+    original_record = db.query(table).filter(table.c.tokenised_value == tokenised_value).first()
+    
+    if original_record:
+        return original_record.original_value
+    else:
+        return "Not Found"

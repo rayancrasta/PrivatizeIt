@@ -33,8 +33,8 @@ async def create_domain_table(domain_data: schemas.DomainTableCreate,db: Session
     return {'status':resp_msg,'domain_policy_id': domain_policy_id}
 
     
-@app.post("/tokenise-Single/", status_code=200)
-async def tokenise_single(user_input: schemas.UserInput = Body(...),db: Session = Depends(get_db)):
+@app.post("/tokenise-Single-record/", status_code=200)
+async def tokenise_single_record(user_input: schemas.UserInput = Body(...),db: Session = Depends(get_db)):
     #Validate the data
     try:
         validated_data = await validate_user_input(user_input.domain_policy_id, user_input.fields)
@@ -46,6 +46,7 @@ async def tokenise_single(user_input: schemas.UserInput = Body(...),db: Session 
     except Exception as e:
         raise HTTPException(status_code=500, detail="Validation Failed")
     print("Schema Validation succesfull")
+    
     #Get name of domain from the MonogDB
     try:
         domain_name = await get_domain_name_from_policyid(user_input.domain_policy_id)
@@ -75,4 +76,25 @@ async def tokenise_single(user_input: schemas.UserInput = Body(...),db: Session 
         raise HTTPException(status_code=500,detail=str(e))
     
     
+@app.get("/detokenise-Single-record",status_code=200)
+async def detokenise_single_record(user_input: schemas.UserInput = Body(...),db:Session = Depends(get_db)):
+    #Get name of domain from the MonogDB
+    try:
+        domain_name = await get_domain_name_from_policyid(user_input.domain_policy_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Domain Name Fetch failed")
     
+    #Get table from the domain_name
+    table = models.create_or_get_tokenised_data_class(domain_name)
+
+    #Get original values
+    try:
+        original_fields = {}
+        
+        for field_name,tokenised_value in user_input.fields.items():
+            original_value = crud.get_original_value(db,table,tokenised_value)
+            original_fields[field_name] = original_value
+        
+        return {"fields":original_fields}
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
