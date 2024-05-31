@@ -11,8 +11,8 @@ database.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-@app.post("/create-domain-table/",status_code=201)
-async def create_domain_table(tokenisation_pdata: schemas.DomainTableCreate,db: Session = Depends(get_db)):
+@app.post("/create-tokenisation-policy/",status_code=201)
+async def create_tokenisation_policy(tokenisation_pdata: schemas.DomainTableCreate,db: Session = Depends(get_db)):
     # Create the domain in PostgreSQL
     try:
         msg,exsists = crud.create_domaintable(db, tokenisation_pdata.tokenisation_pname, tokenisation_pdata.fields)
