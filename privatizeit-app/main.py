@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from database import engine, get_db
-import models, schemas, crud, tokenisation, database
+import models, schemas, crud, tokenisation, database,masking
 from crud_mongodb import add_domain_policy,get_tokenisation_policy_id_from_name,get_tokenisation_pname_from_policyid
 from typing import List,Dict, Any
 from validaton import validate_user_input,fetch_schema
@@ -114,56 +114,9 @@ async def tokenise_single_record(user_input: schemas.UserInputT = Body(...),db: 
       
 @app.get("/detokenise-Single-record/",status_code=200)
 async def detokenise_single_record(user_input: schemas.UserInputDT = Body(...),db:Session = Depends(get_db)):
-    #Get name of domain from the MonogDB
     try:
-        tokenisation_pname = await get_tokenisation_pname_from_policyid(user_input.tokenisation_policy_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Domain Name Fetch failed")
-    
-    #Get table from the tokenisation_pname
-    table = models.create_or_get_tokenised_data_class(tokenisation_pname)
-    
-    try:
-        private_key = crud.get_private_key(user_input.tokenisation_policy_id,db)
-    except Exception as e:
-       raise HTTPException(status_code=500, detail="Private key fetch error : "+str(e))
-   
-    # Fetch the tokenization policy
-    try:
-        schema = await fetch_schema(user_input.tokenisation_policy_id)
-        if schema is None:
-            raise HTTPException(status_code=500, detail="Tokenization policy fetch failed")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Tokenization policy fetch failed")
-    
-    # Convert the policy fields to a set for quick lookup
-    policy_fields = [field.field_name for field in schema.fields]
-    print("Policy: ",policy_fields)
-    
-    #Get original values
-    try:
-        original_fields = {}
-        
-        for field_name,tokenised_value in user_input.fields.items():
-            if field_name in policy_fields:
-                try:
-                    encrypted_value = crud.get_encrypted_value(db,table,tokenised_value)
-                except Exception as e:
-                    raise HTTPException(status_code=500,detail="Encrypted value fetch error:"+str(e))
-                
-                if encrypted_value != "Not Found":
-                    #Decrypt the value 
-                    try:
-                        original_value = tokenisation.decrypt_to_original(encrypted_value,private_key,user_input.key_pass)
-                    except Exception as e:
-                        raise HTTPException(status_code=500,detail="Decrypt to original error: "+str(e))
-                    
-                    original_fields[field_name] = original_value
-                else:
-                    original_fields[field_name] = "Not Found"
-            else:
-                original_fields[field_name] = tokenised_value
-        return {"fields":original_fields}
+        detokenised_dict = await tokenisation.detokenisation_logic(db,user_input)
+        return {"result":detokenised_dict}
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
     
@@ -175,4 +128,20 @@ async def create_masking_policy(masking_rules: schemas.MaskingPolicyCreate = Bod
         return {'status':resp_msg,'masking_policy_id': id}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Cant save masking policy"+str(e))
+    
+@app.get("/get-masked-record",status_code=200)
+async def get_masked_record(masked_req: schemas.MaskedUserIn= Body(...),db:Session = Depends(get_db)):
+    masking_policy_id = masked_req.masking_policy_id
+    try:
+        detokenised_dict = await tokenisation.detokenisation_logic(db,masked_req)
+    except Exception as e:
+        raise HTTPException(status_code=500,detail="Error detokenising "+str(e))
+    
+    try:
+        masked_dict = await masking.masking_record(detokenised_dict,masking_policy_id)
+        return {"result":masked_dict}
+    except Exception as e:
+        raise HTTPException(status_code=500,detail="Masking error :"+str(e))
+    
+    
     

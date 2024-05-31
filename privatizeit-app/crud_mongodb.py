@@ -47,6 +47,5 @@ async def save_masking_policy(masking_rules: MaskingPolicyCreate) -> str:
     except Exception as e:
         raise e 
     
-    
-    
+
     

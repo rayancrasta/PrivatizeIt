@@ -49,3 +49,11 @@ class UserInputDT(BaseModel):
 class KeysToDomains(BaseModel):
     tokenisation_policy_id: str
     private_key: str
+    
+#Masked data request input
+class MaskedUserIn(BaseModel):
+    tokenisation_policy_id: str
+    masking_policy_id : str
+    key_pass : str
+    fields: Dict[str, Any]
+    

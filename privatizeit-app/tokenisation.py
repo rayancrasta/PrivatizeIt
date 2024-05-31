@@ -5,7 +5,9 @@ import crud
 from cryptography.hazmat.primitives.asymmetric import rsa,padding
 from cryptography.hazmat.primitives import serialization,hashes
 from cryptography.hazmat.backends import default_backend
-
+from crud_mongodb import add_domain_policy,get_tokenisation_policy_id_from_name,get_tokenisation_pname_from_policyid
+import models, tokenisation
+from validaton import validate_user_input,fetch_schema
 
 def get_random_salt(length=16):
     # Random string of fixed length
@@ -93,4 +95,56 @@ def decrypt_to_original(encrypted_value_string:str,private_key_string:str,key_pa
 
     return decrypted_value.decode() #to string
 
-     
+async def detokenisation_logic(db,user_input):
+    #Get name of domain from the MonogDB
+    try:
+        tokenisation_pname = await get_tokenisation_pname_from_policyid(user_input.tokenisation_policy_id)
+    except Exception as e:
+        raise "Domain Name Fetch failed"+str(e)
+    
+    #Get table from the tokenisation_pname
+    table = models.create_or_get_tokenised_data_class(tokenisation_pname)
+    
+    try:
+        private_key = crud.get_private_key(user_input.tokenisation_policy_id,db)
+    except Exception as e:
+       raise "Private key fetch error : "+str(e)
+   
+    # Fetch the tokenization policy
+    try:
+        schema = await fetch_schema(user_input.tokenisation_policy_id)
+        if schema is None:
+            raise "Tokenization policy fetch failed"
+    except Exception as e:
+        raise "Tokenization policy fetch failed"
+    
+    # Convert the policy fields to a set for quick lookup
+    policy_fields = [field.field_name for field in schema.fields]
+    print("Policy: ",policy_fields)
+    
+    #Get original values
+    try:
+        original_fields = {}
+        
+        for field_name,tokenised_value in user_input.fields.items():
+            if field_name in policy_fields:
+                try:
+                    encrypted_value = crud.get_encrypted_value(db,table,tokenised_value)
+                except Exception as e:
+                    raise "Encrypted value fetch error:"+str(e)
+                
+                if encrypted_value != "Not Found":
+                    #Decrypt the value 
+                    try:
+                        original_value = tokenisation.decrypt_to_original(encrypted_value,private_key,user_input.key_pass)
+                    except Exception as e:
+                        raise "Decrypt to original error: "+str(e)
+                    
+                    original_fields[field_name] = original_value
+                else:
+                    original_fields[field_name] = "Not Found"
+            else:
+                original_fields[field_name] = tokenised_value  
+        return original_fields
+    except Exception as e:
+        raise e
