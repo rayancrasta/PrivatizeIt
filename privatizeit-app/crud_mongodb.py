@@ -22,7 +22,7 @@ async def get_tokenisation_policy_id_from_name(tokenisation_pname: str) -> str:
     try:
         getdomain = await tokenisation_policy_collection.find_one({"tokenisation_pname": tokenisation_pname})
         domaindict =  domain_helper(getdomain)
-        print("Domain dict: ",domaindict['id'])
+        # print("Domain dict: ",domaindict['id'])
         return domaindict['id']
     except Exception as e:
         return "Cant find policy ID"

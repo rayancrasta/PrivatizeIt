@@ -16,8 +16,8 @@ async def masking_record(detokenised_dict,masking_policy_id) -> dict:
                 #Find the matching rule 
                 matching_rule = next((rule for rule in schema.rules if rule.field_name == key),None)
                 if matching_rule:
-                    print(matching_rule)
-                    print(type(matching_rule))
+                    # print(matching_rule)
+                    # print(type(matching_rule))
                     show_start = matching_rule.show_start
                     show_last = matching_rule.show_last
 

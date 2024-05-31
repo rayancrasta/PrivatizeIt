@@ -19,7 +19,7 @@ async def create_tokenisation_policy(tokenisation_pdata: schemas.DomainTableCrea
     except Exception as e:
         raise HTTPException(status_code=500, detail="DB"+str(e))
 
-    print(exsists)
+    # print(exsists)
     #Save the policy in MongoDB
     try:
         if not exsists:
@@ -44,71 +44,9 @@ async def create_tokenisation_policy(tokenisation_pdata: schemas.DomainTableCrea
  
 @app.post("/tokenise-Single-record/", status_code=200)
 async def tokenise_single_record(user_input: schemas.UserInputT = Body(...),db: Session = Depends(get_db)):
-    
-    #Get name of domain from the MonogDB
     try:
-        tokenisation_pname = await get_tokenisation_pname_from_policyid(user_input.tokenisation_policy_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Domain Name Fetch failed")
-    
-    #Filter the values to only schema values for validation
-    filtered_values = {}
-    
-    # Fetch the tokenization policy
-    try:
-        schema = await fetch_schema(user_input.tokenisation_policy_id)
-        if schema is None:
-            raise HTTPException(status_code=500, detail="Tokenization policy fetch failed")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Tokenization policy fetch failed")
-    
-    # Convert the policy fields to a set for quick lookup
-    policy_fields = [field.field_name for field in schema.fields]
-    print("Policy: ",policy_fields)
-    #Get the values to tokenise only in the filtered list    
-    for field_name,fieldvalue in user_input.fields.items():
-        if field_name in policy_fields:
-            filtered_values[field_name]=fieldvalue    
-    
-    #Validate the data
-    try:
-        validated_data = await validate_user_input(user_input.tokenisation_policy_id,schema, filtered_values)
-        # print(validated_data)
-        if not validated_data:
-            print("Schema Validation Failed")
-            raise HTTPException(status_code=422, detail="Validation failed")
-            
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Validation Failed")
-    print("Schema Validation succesfull")
-    
-
-    #Get the public key from the request
-    public_key = user_input.domain_key  
-    
-    #Tokenise the data and save in DB
-    #Get table from the tokenisation_pname
-    table = models.create_or_get_tokenised_data_class(tokenisation_pname)
-    tokenised_data = {}
-    print(user_input.fields.items())
-    try:
-        for field_name,original_value in user_input.fields.items():
-            if field_name in policy_fields:
-                if field_name == "email":
-                    tokenised_value = tokenisation.tokenise_email(original_value)
-                elif original_value.isdigit():
-                    tokenised_value = tokenisation.tokenise_number(original_value)
-                else:
-                    tokenised_value = tokenisation.tokenise_string(original_value)
-                
-                encrypted_value = tokenisation.encrypt_original(public_key,original_value)
-                crud.save_tokenised_data(db,table,encrypted_value,tokenised_value)
-                tokenised_data[field_name] = tokenised_value
-            else:
-                tokenised_data[field_name] = original_value
-                
+        tokenised_data = await tokenisation.tokenisation_logic(db,user_input)            
         return {"result": tokenised_data}
-    
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
       

@@ -12,7 +12,7 @@ masking_policy_colleciton = database.get_collection("masking_policies")
 
 # Use the Pydantic model for the helper function
 def domain_helper(domain) -> dict:
-    print("Mongocode: ",domain)
+    # print("Mongocode: ",domain)
     return TokenisationPolicy(
         id=str(domain["_id"]),
         tokenisation_pname=domain["tokenisation_pname"],
