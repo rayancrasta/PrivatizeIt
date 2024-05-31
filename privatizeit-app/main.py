@@ -45,7 +45,7 @@ async def create_tokenisation_policy(tokenisation_pdata: schemas.DomainTableCrea
 @app.post("/tokenise-Single-record/", status_code=200)
 async def tokenise_single_record(user_input: schemas.UserInputT = Body(...),db: Session = Depends(get_db)):
     try:
-        tokenised_data = await tokenisation.tokenisation_logic(db,user_input)            
+        tokenised_data = await tokenisation.tokenisation_logic(db,user_input.tokenisation_policy_id,user_input.fields,user_input.domain_key)          
         return {"result": tokenised_data}
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
@@ -53,7 +53,7 @@ async def tokenise_single_record(user_input: schemas.UserInputT = Body(...),db: 
 @app.get("/detokenise-Single-record/",status_code=200)
 async def detokenise_single_record(user_input: schemas.UserInputDT = Body(...),db:Session = Depends(get_db)):
     try:
-        detokenised_dict = await tokenisation.detokenisation_logic(db,user_input)
+        detokenised_dict = await tokenisation.detokenisation_logic(db,user_input.tokenisation_policy_id,user_input.fields,user_input.key_pass)
         return {"result":detokenised_dict}
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
@@ -71,7 +71,7 @@ async def create_masking_policy(masking_rules: schemas.MaskingPolicyCreate = Bod
 async def get_masked_record(masked_req: schemas.MaskedUserIn= Body(...),db:Session = Depends(get_db)):
     masking_policy_id = masked_req.masking_policy_id
     try:
-        detokenised_dict = await tokenisation.detokenisation_logic(db,masked_req)
+        detokenised_dict = await tokenisation.detokenisation_logic(db,masked_req.tokenisation_policy_id,masked_req.fields,masked_req.key_pass)
     except Exception as e:
         raise HTTPException(status_code=500,detail="Error detokenising "+str(e))
     
@@ -81,5 +81,26 @@ async def get_masked_record(masked_req: schemas.MaskedUserIn= Body(...),db:Sessi
     except Exception as e:
         raise HTTPException(status_code=500,detail="Masking error :"+str(e))
     
+@app.post("/batch-tokenise",status_code=200)
+async def batch_tokenise(batch_tkreq:schemas.UserInputTBatch = Body(...),db:Session = Depends(get_db)):
+    try:
+        batch_data = []
+        for rfields in batch_tkreq.fields:
+            tokenised_data = await tokenisation.tokenisation_logic(db,batch_tkreq.tokenisation_policy_id,rfields,batch_tkreq.domain_key)    
+            batch_data.append(tokenised_data)
+        
+        return {"result": batch_data}
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
     
-    
+@app.get("/batch-detokenise",status_code=200)
+async def batch_detokenise(batch_dtkreq:schemas.UserInputDTBatch = Body(...),db:Session = Depends(get_db)):
+    try:
+        batch_data = []
+        for rfields in batch_dtkreq.fields:
+            tokenised_data = await tokenisation.tokenisation.detokenisation_logic(db,batch_dtkreq.tokenisation_policy_id,rfields,batch_dtkreq.key_pass)
+            batch_data.append(tokenised_data)
+        
+        return {"result": batch_data}
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))

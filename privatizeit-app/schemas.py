@@ -39,12 +39,21 @@ class UserInputT(BaseModel):
     domain_key : str
     fields: Dict[str, Any]
 
+class UserInputTBatch(BaseModel):
+    tokenisation_policy_id: str
+    domain_key : str
+    fields: List[Dict[str, Any]]
+
 # DEtokenisationInput
 class UserInputDT(BaseModel):
     tokenisation_policy_id: str
     key_pass : str
     fields: Dict[str, Any]
 
+class UserInputDTBatch(BaseModel):
+    tokenisation_policy_id: str
+    key_pass : str
+    fields: List[Dict[str, Any]]
 #Keys mapped to domains
 class KeysToDomains(BaseModel):
     tokenisation_policy_id: str

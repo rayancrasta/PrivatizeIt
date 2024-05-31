@@ -8,6 +8,7 @@ from cryptography.hazmat.backends import default_backend
 from crud_mongodb import add_domain_policy,get_tokenisation_policy_id_from_name,get_tokenisation_pname_from_policyid
 import models, tokenisation, schemas
 from validaton import validate_user_input,fetch_schema
+from fastapi import HTTPException
 
 def get_random_salt(length=16):
     # Random string of fixed length
@@ -96,28 +97,28 @@ def decrypt_to_original(encrypted_value_string:str,private_key_string:str,key_pa
 
     return decrypted_value.decode() #to string
 
-async def detokenisation_logic(db,user_input:schemas.UserInputDT):
+async def detokenisation_logic(db,tokenisation_policy_id,rfields,key_pass):
     #Get name of domain from the MonogDB
     try:
-        tokenisation_pname = await get_tokenisation_pname_from_policyid(user_input.tokenisation_policy_id)
+        tokenisation_pname = await get_tokenisation_pname_from_policyid(tokenisation_policy_id)
     except Exception as e:
-        raise "Domain Name Fetch failed"+str(e)
+        raise HTTPException(status_code=500, detail="Domain Name Fetch failed"+str(e))
     
     #Get table from the tokenisation_pname
     table = models.create_or_get_tokenised_data_class(tokenisation_pname)
     
     try:
-        private_key = crud.get_private_key(user_input.tokenisation_policy_id,db)
+        private_key = crud.get_private_key(tokenisation_policy_id,db)
     except Exception as e:
-       raise "Private key fetch error : "+str(e)
+       raise HTTPException(status_code=500, detail="Private key fetch error : "+str(e))
    
     # Fetch the tokenization policy
     try:
-        schema = await fetch_schema(user_input.tokenisation_policy_id)
+        schema = await fetch_schema(tokenisation_policy_id)
         if schema is None:
-            raise "Tokenization policy fetch failed"
+            raise HTTPException(status_code=500, detail="Tokenization policy fetch failed")
     except Exception as e:
-        raise "Tokenization policy fetch failed"
+        raise HTTPException(status_code=500, detail="Tokenization policy fetch failed")
     
     # Convert the policy fields to a set for quick lookup
     policy_fields = [field.field_name for field in schema.fields]
@@ -127,19 +128,19 @@ async def detokenisation_logic(db,user_input:schemas.UserInputDT):
     try:
         original_fields = {}
         
-        for field_name,tokenised_value in user_input.fields.items():
+        for field_name,tokenised_value in rfields.items():
             if field_name in policy_fields:
                 try:
                     encrypted_value = crud.get_encrypted_value(db,table,tokenised_value)
                 except Exception as e:
-                    raise "Encrypted value fetch error:"+str(e)
+                    raise HTTPException(status_code=500, detail="Encrypted value fetch error:"+str(e))
                 
                 if encrypted_value != "Not Found":
                     #Decrypt the value 
                     try:
-                        original_value = tokenisation.decrypt_to_original(encrypted_value,private_key,user_input.key_pass)
+                        original_value = tokenisation.decrypt_to_original(encrypted_value,private_key,key_pass)
                     except Exception as e:
-                        raise "Decrypt to original error: "+str(e)
+                        raise HTTPException(status_code=500, detail="Decrypt to original error: "+str(e))
                     
                     original_fields[field_name] = original_value
                 else:
@@ -150,47 +151,47 @@ async def detokenisation_logic(db,user_input:schemas.UserInputDT):
     except Exception as e:
         raise e
     
-async def tokenisation_logic(db,user_input:schemas.UserInputT):
+async def tokenisation_logic(db,tokenisation_policy_id,rfields,domain_key):
 #Get name of domain from the MonogDB
     try:
-        tokenisation_pname = await get_tokenisation_pname_from_policyid(user_input.tokenisation_policy_id)
+        tokenisation_pname = await get_tokenisation_pname_from_policyid(tokenisation_policy_id)
     except Exception as e:
-        raise "Domain Name Fetch failed"+str(e)
+        raise HTTPException(status_code=500, detail="Domain Name Fetch failed"+str(e))
     
     #Filter the values to only schema values for validation
     filtered_values = {}
     
     # Fetch the tokenization policy
     try:
-        schema = await fetch_schema(user_input.tokenisation_policy_id)
+        schema = await fetch_schema(tokenisation_policy_id)
         if schema is None:
-            raise "Tokenization policy fetch failed"+str(e)
+            raise HTTPException(status_code=500, detail="Tokenization policy fetch failed"+str(e))
     except Exception as e:
-        raise "Tokenization policy fetch failed"+str(e)
+        raise HTTPException(status_code=500, detail="Tokenization policy fetch failed"+str(e))
     
     # Convert the policy fields to a set for quick lookup
     policy_fields = [field.field_name for field in schema.fields]
     # print("Policy: ",policy_fields)
     #Get the values to tokenise only in the filtered list    
-    for field_name,fieldvalue in user_input.fields.items():
+    for field_name,fieldvalue in rfields.items():
         if field_name in policy_fields:
             filtered_values[field_name]=fieldvalue    
     
     #Validate the data
     try:
-        validated_data = await validate_user_input(user_input.tokenisation_policy_id,schema, filtered_values)
+        validated_data = await validate_user_input(tokenisation_policy_id,schema, filtered_values)
         # print(validated_data)
         if not validated_data:
             # print("Schema Validation Failed")
-            raise "Validation failed"+str(e)
+            raise HTTPException(status_code=500, detail="Validation failed"+str(e))
             
     except Exception as e:
-        raise "Validation Failed"+str(e)
+        raise HTTPException(status_code=500, detail="Validation Failed"+str(e))
     # print("Schema Validation succesfull")
     
 
     #Get the public key from the request
-    public_key = user_input.domain_key  
+    public_key = domain_key  
     
     #Tokenise the data and save in DB
     #Get table from the tokenisation_pname
@@ -198,7 +199,7 @@ async def tokenisation_logic(db,user_input:schemas.UserInputT):
     tokenised_data = {}
     # print(user_input.fields.items())
     try:
-        for field_name,original_value in user_input.fields.items():
+        for field_name,original_value in rfields.items():
             if field_name in policy_fields:
                 # print(original_value)
                 if field_name == "email":
@@ -217,4 +218,4 @@ async def tokenisation_logic(db,user_input:schemas.UserInputT):
         return tokenised_data
 
     except Exception as e:
-        raise "Error tokenising record"+str(e)
+        raise HTTPException(status_code=500, detail="Error tokenising record"+str(e))
