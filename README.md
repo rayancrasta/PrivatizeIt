@@ -1,4 +1,4 @@
-# Privatizeit: Tokenization and Masking API
+# Tokenization and Masking API
 
 This project implements an API using **FastAPI** to manage data tokenization, detokenization, and masking policies. It integrates with **PostgreSQL** for relational data storage and **MongoDB** for storing tokenization and masking policies. The API supports operations such as creating tokenization and masking policies, tokenizing and detokenizing single or batch records, and applying masking rules.
 

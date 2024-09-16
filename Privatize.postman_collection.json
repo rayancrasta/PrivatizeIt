@@ -1,0 +1,217 @@
+{
+	"info": {
+		"_postman_id": "6f8af7f4-421f-4bc4-a769-a3de416664af",
+		"name": "Privatize",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25953169"
+	},
+	"item": [
+		{
+			"name": "Create TKPolicy Card",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tokenisation_pname\": \"CardTk1\",\n    \"domain_name\": \"Card\",\n    \"key_pass\": \"supersecure\",\n    \"fields\": [\n        {\n            \"field_name\": \"SSN\",\n            \"field_type\": \"numeric\",\n            \"field_length\": 9\n        },\n        {\n            \"field_name\": \"Card\",\n            \"field_type\": \"numeric\",\n            \"field_length\": 16\n        }\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/create-tokenisation-policy/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"create-tokenisation-policy",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Tokenise Card Record",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tokenisation_policy_id\": \"6659cdf99b1f81c048086972\",\n     \"domain_key\": \"-----BEGIN PUBLIC KEY-----\\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWoY1lDAtmRwcQtBuPtC8LH6R+\\nJspyFNPCKGhgSbWDDW4MomXj39vl/ad8F9eNiN/WARk0zIifNljZ54RxHUnrPskY\\nnRxKM3gDaJmVTz/dU3Y0mQbT8soQvA4cUM02Umuc8sUn/Ed5bBQybCq2azzQJqIN\\nHl2dKI3PjyZgzodf4wIDAQAB\\n-----END PUBLIC KEY-----\\n\",\n    \"fields\": {\n        \"name\": \"Rayan\",\n        \"SSN\" : \"489368351\",\n        \"Card\" : \"4929381332664296\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/tokenise-Single-record",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"tokenise-Single-record"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Detokenise Card Record",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tokenisation_policy_id\": \"6659cdf99b1f81c048086972\",\n    \"key_pass\":\"supersecure\",\n    \"fields\": {\n        \"name\": \"Rayan\",\n        \"SSN\": \"003309024\",\n        \"Card\": \"7018575315830004\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/detokenise-Single-record",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"detokenise-Single-record"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "MaskingPolicy Create Card",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"domain_name\": \"Card\",\n    \"masking_policy_name\":\"CardMsk2\",\n    \"tokenisation_policy_id\": \"6659cdf99b1f81c048086972\",\n    \"rules\": [\n        {\n            \"field_name\" : \"SSN\",\n            \"show_start\": 0,\n            \"show_last\": 3\n        },\n        {\n            \"field_name\" : \"Card\",\n            \"show_start\": 0,\n            \"show_last\": 4\n        }\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/create-masking-policy/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"create-masking-policy",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Mask Card Record",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tokenisation_policy_id\": \"6659cdf99b1f81c048086972\",\n    \"masking_policy_id\": \"6659ce579b1f81c048086973\",\n    \"key_pass\":\"supersecure\",\n    \"fields\": {\n        \"name\": \"Rayan\",\n        \"SSN\": \"003309024\",\n        \"Card\": \"7018575315830004\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/get-masked-record",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"get-masked-record"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Batch Tokenise Card",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tokenisation_policy_id\": \"6659cdf99b1f81c048086972\",\n     \"domain_key\": \"-----BEGIN PUBLIC KEY-----\\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWoY1lDAtmRwcQtBuPtC8LH6R+\\nJspyFNPCKGhgSbWDDW4MomXj39vl/ad8F9eNiN/WARk0zIifNljZ54RxHUnrPskY\\nnRxKM3gDaJmVTz/dU3Y0mQbT8soQvA4cUM02Umuc8sUn/Ed5bBQybCq2azzQJqIN\\nHl2dKI3PjyZgzodf4wIDAQAB\\n-----END PUBLIC KEY-----\\n\",\n    \"fields\": [{\"name\": \"Rayan\",\"SSN\" : \"489368351\",\"Card\" : \"4929381332664296\"},\n    {\"name\":\"Crasta\",\"SSN\":\"690055315\",\"Card\":\"4916481158148111\"}]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/batch-tokenise",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"batch-tokenise"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Batch Detokenise Card",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tokenisation_policy_id\": \"6659cdf99b1f81c048086972\",\n    \"key_pass\":\"supersecure\",\n    \"fields\": [\n        {\n            \"name\": \"Rayan\",\n            \"SSN\": \"702752454\",\n            \"Card\": \"3123801124762593\"\n        },\n        {\n            \"name\": \"Crasta\",\n            \"SSN\": \"710393394\",\n            \"Card\": \"0119404503031834\"\n        }\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/batch-detokenise",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"batch-detokenise"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
