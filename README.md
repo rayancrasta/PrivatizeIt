@@ -5,7 +5,7 @@ This project implements an API using **FastAPI** to manage data tokenization, de
 ## Concepts
 **Tokenization** replaces sensitive data with non-sensitive tokens that look similar but have no real value. For example, "4929381332664296" might be tokenized to "7018575315830004".
 
-**Masking** hides parts of data while keeping some visible. For instance, "7018575315830004" might be masked to "XXXXXXXXXXXX4296" to show only the last four digits
+**Masking** hides parts of data while keeping some visible. For instance, "4929381332664296" might be masked to "XXXXXXXXXXXX4296" to show only the last four digits
 
 ## Features
 
