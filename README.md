@@ -18,25 +18,31 @@ This project implements an API using **FastAPI** to manage data tokenization, de
 - **Method**: POST
 - **Description**: Creates a new tokenization policy in both PostgreSQL and MongoDB.
 - **Example**:
-  ```bash
-  curl -X POST "http://localhost:8000/create-domain-table/" \
-  -H "Content-Type: application/json" \
-  -d '{
-        "tokenisation_pname": "PayrollTk1",
-        "domain_name":"Payroll",
+- **Request**:
+  ```json
+    {
+        "tokenisation_pname": "CardTk1",
+        "domain_name": "Card",
+        "key_pass": "supersecure",
         "fields": [
-            {"field_name": "name", "field_type": "char", "field_length": 50},
-            {"field_name": "department", "field_type": "char", "field_length": 5},
-            {"field_name": "email", "field_type": "alphanumeric", "field_length": 30},
-            {"field_name": "account_id", "field_type": "numeric", "field_length": 30}
+            {
+                "field_name": "SSN",
+                "field_type": "numeric",
+                "field_length": 9
+            },
+            {
+                "field_name": "Card",
+                "field_type": "numeric",
+                "field_length": 16
+            }
         ]
-    }'
+    }
   ```
 - **Response**:
   ```json
   {
     "status": "Domain table PayrollTk1 created successfully",
-    "tokenisation_policy_id": "6657794b5ce60aa2ee3fbeb9"
+    "tokenisation_policy_id": "6659cdf99b1f81c048086972"
   }
   ```
 
@@ -46,29 +52,27 @@ This project implements an API using **FastAPI** to manage data tokenization, de
 - **Method**: POST
 - **Description**: Tokenizes a single record based on the tokenization policy.
 - **Example**:
-  ```bash
-  curl -X POST "http://localhost:8000/tokenise-Single-record/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tokenisation_policy_id": "6657794b5ce60aa2ee3fbeb9",
-    "fields": {
-        "name": "Rayan",
-        "department": "Crasta",
-        "email": "rayan@gmail.com",
-        "account_id": "123"
+- **Request**:
+  ```json
+    {
+        "tokenisation_policy_id": "6659cdf99b1f81c048086972",
+        "domain_key": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWoY1lDAtmRwcQtBuPtC8LH6R+\nJspyFNPCKGhgSbWDDW4MomXj39vl/ad8F9eNiN/WARk0zIifNljZ54RxHUnrPskY\nnRxKM3gDaJmVTz/dU3Y0mQbT8soQvA4cUM02Umuc8sUn/Ed5bBQybCq2azzQJqIN\nHl2dKI3PjyZgzodf4wIDAQAB\n-----END PUBLIC KEY-----\n",
+        "fields": {
+            "name": "Rayan",
+            "SSN" : "489368351",
+            "Card" : "4929381332664296"
+        }
     }
-  }'
   ```
 - **Response**:
   ```json
-  {
-    "result": {
-      "name": "a7127",
-      "department": "69d1fc",
-      "email": "59e29@e3125.domain",
-      "account_id": "331"
+    {
+        "result": {
+            "name": "Rayan",
+            "SSN": "112536168",
+            "Card": "3324779219528551"
+        }
     }
-  }
   ```
 
 ### 3. Detokenize Single Record
@@ -77,29 +81,27 @@ This project implements an API using **FastAPI** to manage data tokenization, de
 - **Method**: GET
 - **Description**: Detokenizes a single record and returns the original value.
 - **Example**:
-  ```bash
-  curl -X GET "http://localhost:8000/detokenise-Single-record/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tokenisation_policy_id": "6657794b5ce60aa2ee3fbeb9",
-    "fields": {
-        "name": "a7127",
-        "department": "69d1fc",
-        "email": "59e29@e3125.domain",
-        "account_id": "331"
+- **Request**:
+  ```json
+    {
+        "tokenisation_policy_id": "6659cdf99b1f81c048086972",
+        "key_pass":"supersecure",
+        "fields": {
+            "name": "Rayan",
+            "SSN": "003309024",
+            "Card": "7018575315830004"
+        }
     }
-  }'
   ```
 - **Response**:
   ```json
-  {
-    "result": {
-      "name": "Rayan",
-      "department": "Crasta",
-      "email": "rayan@gmail.com",
-      "account_id": "123"
+    {
+        "result": {
+            "name": "Rayan",
+            "SSN": "489368351",
+            "Card": "4929381332664296"
+        }
     }
-  }
   ```
 
 ### 4. Create Masking Policy
@@ -108,33 +110,32 @@ This project implements an API using **FastAPI** to manage data tokenization, de
 - **Method**: POST
 - **Description**: Creates a new masking policy for sensitive data.
 - **Example**:
-  ```bash
-  curl -X POST "http://localhost:8000/create-masking-policy/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "domain_name": "Health",
-    "masking_policy_name": "Masking1",
-    "tokenisation_policy_id": "6658d7ce91b5255a4633cab9",
-    "rules": [
-      {
-        "field_name" : "NInumber",
-        "show_start": 0,
-        "show_last": 3
-      },
-      {
-        "field_name" : "Bankdetail",
-        "show_start": 0,
-        "show_last": 3
-      }
-    ]
-  }'
+- **Request**:
+  ```json
+    {
+        "domain_name": "Card",
+        "masking_policy_name":"CardMsk2",
+        "tokenisation_policy_id": "6659cdf99b1f81c048086972",
+        "rules": [
+            {
+                "field_name" : "SSN",
+                "show_start": 0,
+                "show_last": 3
+            },
+            {
+                "field_name" : "Card",
+                "show_start": 0,
+                "show_last": 4
+            }
+        ]
+    }
   ```
 - **Response**:
   ```json
-  {
-    "status": "Masking Policy Masking1 Created",
-    "masking_policy_id": "6658dfa75b53d2a11c3a8017"
-  }
+    {
+        "status": "Masking Policy CardMsk2 Was Created",
+        "masking_policy_id": "66e8a127174190cfd4a06cc1"
+    }
   ```
 
 ### 5. Get Masked Record
@@ -145,35 +146,28 @@ Note: We get masked record instead of detokenised data. The tokenised data will 
 - **Method**: GET
 - **Description**: Applies masking to sensitive data and returns the masked version.
 - **Example**:
-  ```bash
-  curl -X GET "http://localhost:8000/get-masked-record/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tokenisation_policy_id": "6658da025d15f094ed330f7d",
-    "masking_policy_id": "6658dfa75b53d2a11c3a8017",
-    "key_pass": "password",
-    "fields": {
-        "name": "30bef",
-        "age": "4",
-        "NInumber": "42620",
-        "Bankdetail": "05620",
-        "Ward": "24",
-        "Floor": "4"
+- **Request**:
+  ```json
+    {
+        "tokenisation_policy_id": "6659cdf99b1f81c048086972",
+        "masking_policy_id": "6659ce579b1f81c048086973",
+        "key_pass":"supersecure",
+        "fields": {
+            "name": "Rayan",
+            "SSN": "003309024",
+            "Card": "7018575315830004"
+        }
     }
-  }'
   ```
 - **Response**:
   ```json
-  {
-    "result": {
-      "name": "30bef",
-      "age": "4",
-      "NInumber": "XXX20",
-      "Bankdetail": "XXX20",
-      "Ward": "24",
-      "Floor": "4"
+    {
+        "result": {
+            "name": "Rayan",
+            "SSN": "XXXXXX351",
+            "Card": "XXXXXXXXXXXX4296"
+        }
     }
-  }
   ```
 
 ### 6. Batch Tokenize
@@ -182,34 +176,31 @@ Note: We get masked record instead of detokenised data. The tokenised data will 
 - **Method**: POST
 - **Description**: Tokenizes multiple records in a single request.
 - **Example**:
-  ```bash
-  curl -X POST "http://localhost:8000/batch-tokenise/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tokenisation_policy_id": "6659cdf99b1f81c048086972",
-    "domain_key": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWoY1lDAtmRwcQtBuPtC8LH6R+\nJspyFNPCKGhgSbWDDW4MomXj39vl/ad8F9eNiN/WARk0zIifNljZ54RxHUnrPskY\nnRxKM3gDaJmVTz/dU3Y0mQbT8soQvA4cUM02Umuc8sUn/Ed5bBQybCq2azzQJqIN\nHl2dKI3PjyZgzodf4wIDAQAB\n-----END PUBLIC KEY-----\n",
-    "fields": [
-      {"name": "Rayan", "SSN" : "489368351", "Card" : "4929381332664296"},
-      {"name":"Crasta", "SSN":"690055315", "Card":"4916481158148111"}
-    ]
-  }'
+- **Request**:
+  ```json
+    {
+        "tokenisation_policy_id": "6659cdf99b1f81c048086972",
+        "domain_key": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWoY1lDAtmRwcQtBuPtC8LH6R+\nJspyFNPCKGhgSbWDDW4MomXj39vl/ad8F9eNiN/WARk0zIifNljZ54RxHUnrPskY\nnRxKM3gDaJmVTz/dU3Y0mQbT8soQvA4cUM02Umuc8sUn/Ed5bBQybCq2azzQJqIN\nHl2dKI3PjyZgzodf4wIDAQAB\n-----END PUBLIC KEY-----\n",
+        "fields": [{"name": "Rayan","SSN" : "489368351","Card" : "4929381332664296"},
+        {"name":"Crasta","SSN":"690055315","Card":"4916481158148111"}]
+    }
   ```
 - **Response**:
   ```json
-  {
-    "result": [
-      {
-        "name": "30bef",
-        "SSN": "590569814",
-        "Card": "5101041221355240"
-      },
-      {
-        "name": "4zefg",
-        "SSN": "915121344",
-        "Card": "1972555531391524"
-      }
-    ]
-  }
+    {
+        "result": [
+            {
+                "name": "Rayan",
+                "SSN": "702752454",
+                "Card": "3123801124762593"
+            },
+            {
+                "name": "Crasta",
+                "SSN": "710393394",
+                "Card": "0119404503031834"
+            }
+        ]
+    }
   ```
 
 ### 7. Batch Detokenize
@@ -218,25 +209,25 @@ Note: We get masked record instead of detokenised data. The tokenised data will 
 - **Method**: GET
 - **Description**: Detokenizes multiple records and returns their original values.
 - **Example**:
-  ```bash
-  curl -X GET "http://localhost:8000/batch-detokenise/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tokenisation_policy_id": "6659cdf99b1f81c048086972",
-    "key_pass": "supersecure",
-    "fields": [
-      {
-        "name": "30bef",
-        "SSN": "590569814",
-        "Card": "5101041221355240"
-      },
-      {
-        "name": "4zefg",
-        "SSN": "915121344",
-        "Card": "1972555531391524"
-      }
-    ]
-  }'
+
+- **Request**:
+  ```json
+    {
+        "tokenisation_policy_id": "6659cdf99b1f81c048086972",
+        "key_pass":"supersecure",
+        "fields": [
+            {
+                "name": "Rayan",
+                "SSN": "702752454",
+                "Card": "3123801124762593"
+            },
+            {
+                "name": "Crasta",
+                "SSN": "710393394",
+                "Card": "0119404503031834"
+            }
+        ]
+    }
   ```
 - **Response**:
   ```json
