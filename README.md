@@ -2,6 +2,11 @@
 
 This project implements an API using **FastAPI** to manage data tokenization, detokenization, and masking policies. It integrates with **PostgreSQL** for relational data storage and **MongoDB** for storing tokenization and masking policies. The API supports operations such as creating tokenization and masking policies, tokenizing and detokenizing single or batch records, and applying masking rules.
 
+## Concepts
+**Tokenization** replaces sensitive data with non-sensitive tokens that look similar but have no real value. For example, "1234-5678-9876-5432" might be tokenized to "XXXX-XXXX-XXXX-5432".
+
+**Masking** hides parts of data while keeping some visible. For instance, "1234-5678-9876-5432" might be masked to "1234-XXXX-XXXX-5432" to show only the last four digits
+
 ## Features
 
 1. **Tokenization Policies**: Create and manage tokenization policies. These policies are stored in both PostgreSQL and MongoDB.
