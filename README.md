@@ -41,7 +41,7 @@ This project implements an API using **FastAPI** to manage data tokenization, de
 - **Response**:
   ```json
   {
-    "status": "Domain table PayrollTk1 created successfully",
+    "status": "Domain table CardTk1 created successfully",
     "tokenisation_policy_id": "6659cdf99b1f81c048086972"
   }
   ```
