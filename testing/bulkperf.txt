@@ -1,0 +1,49 @@
+Tokenisation Successful requests: 1000
+Time taken: 4.413983106613159
+(1000, 3)
+
+Tokenisation Successful requests: 5000
+Batch: 1000
+Time taken: 23.622856855392456
+(5000, 3)
+
+Tokenisation Successful requests: 10000
+Batch : 1000
+Time taken: 46.87714195251465
+(10000, 3)
+
+Tokenisation Successful requests: 15000
+Time taken: 69.52079510688782
+(15000, 3)
+
+Tokenisation Successful requests: 30000
+Time taken: 126.0871069431305
+(30000, 3)
+
+---
+
+Tokenisation Successful requests: 1000
+Time taken: 4.343628644943237
+Detokenisation Successful requests: 1000
+Time taken: 28.230469226837158
+
+Tokenisation Successful requests: 5000
+Time taken: 21.203462839126587
+Detokenisation Successful requests: 5000
+Time taken: 159.45538187026978
+
+Tokenisation Successful requests: 10000
+Time taken: 49.99468278884888
+Detokenisation Successful requests: 10000
+Time taken: 279.7060101032257
+
+Tokenisation Successful requests: 15000
+Time taken: 73.26717782020569
+Detokenisation Successful requests: 15000
+Time taken: 720.9363918304443
+
+Tokenisation Successful requests: 30000
+Time taken: 127.6566948890686
+Detokenisation Successful requests: 30000
+Time taken: 4303.917020082474
+
